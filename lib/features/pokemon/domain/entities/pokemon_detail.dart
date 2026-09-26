@@ -1,5 +1,7 @@
+import 'package:equatable/equatable.dart';
+
 /// Détail complet d'un pokémon (écran de détail).
-class PokemonDetail {
+class PokemonDetail extends Equatable {
   final int id;
   final String name;
   final String imageUrl;
@@ -44,4 +46,8 @@ class PokemonDetail {
         abilities: List<String>.from(json['abilities'] as List),
         stats: Map<String, int>.from(json['stats'] as Map),
       );
+
+  @override
+  List<Object?> get props =>
+      [id, name, imageUrl, heightDm, weightHg, types, abilities, stats];
 }

@@ -89,12 +89,35 @@ Supabase :
 La session Supabase elle-même (refresh automatique en arrière-plan, 
 persistance) est gérée par le SDK `supabase_flutter`.
 
-### State management
+### State management et injection de dépendances
 
-`provider` (ChangeNotifier) : un provider par écran/feature
-(`PokemonListProvider`, `PokemonDetailProvider`, `FavoritesProvider`,
-`AuthProvider`), injectés au-dessus du router pour rester partagés entre
-écrans (ex. l'icône "favori" sur la liste et sur le détail).
+- `get_it` (`lib/core/di/service_locator.dart`) construit et centralise les
+  dépendances "métier" sans état Flutter : `NetworkInfo`, les deux clients
+  Dio, les data sources et les repositories. Chaque feature ne connaît que
+  les interfaces `domain/`, jamais les implémentations concrètes entre elles.
+- `provider` (ChangeNotifier) reste responsable des objets qui doivent vivre
+  dans l'arbre de widgets (cycle de vie, `dispose()`, rebuilds) : un provider
+  par écran/feature (`PokemonListProvider`, `PokemonDetailProvider`,
+  `FavoritesProvider`, `AuthProvider`), injectés au-dessus du router pour
+  rester partagés entre écrans (ex. l'icône "favori" sur la liste et sur le
+  détail).
+
+### Égalité de valeur
+
+Les entités (`Pokemon`, `PokemonDetail`, `FavoritePokemon`, `AppUser`)
+étendent `Equatable` : deux instances avec les mêmes champs sont égales,
+ce qui simplifie les comparaisons dans les tests et évite les bugs de
+rebuild inutiles côté UI.
+
+### Détection réseau
+
+`ConnectivityNetworkInfo` (`lib/core/network/network_info.dart`) ne se fie
+pas uniquement à l'état de l'interface réseau (`connectivity_plus`), qui
+peut être "connecté" sans accès internet réel (portail captif, wifi sans
+internet...). Il fait en plus une requête HTTP légère vers l'API Supabase
+avec un timeout court : seule une vraie erreur de connexion (timeout, DNS,
+hôte injoignable) est traitée comme "hors-ligne" ; n'importe quelle réponse
+HTTP (même une erreur 4xx) prouve que le réseau fonctionne.
 
 ## Configuration du projet
 

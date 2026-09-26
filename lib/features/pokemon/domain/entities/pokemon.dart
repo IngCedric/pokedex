@@ -1,5 +1,7 @@
+import 'package:equatable/equatable.dart';
+
 /// Un pokémon tel qu'affiché dans la liste (données minimales).
-class Pokemon {
+class Pokemon extends Equatable {
   final int id;
   final String name;
   final String imageUrl;
@@ -13,4 +15,7 @@ class Pokemon {
         name: json['name'] as String,
         imageUrl: json['imageUrl'] as String,
       );
+
+  @override
+  List<Object?> get props => [id, name, imageUrl];
 }

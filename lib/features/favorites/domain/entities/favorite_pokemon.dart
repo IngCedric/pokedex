@@ -1,4 +1,6 @@
-class FavoritePokemon {
+import 'package:equatable/equatable.dart';
+
+class FavoritePokemon extends Equatable {
   final int pokemonId;
   final String name;
   final String imageUrl;
@@ -32,4 +34,7 @@ class FavoritePokemon {
         imageUrl: row['image_url'] as String,
         addedAt: DateTime.parse(row['created_at'] as String),
       );
+
+  @override
+  List<Object?> get props => [pokemonId, name, imageUrl, addedAt];
 }
