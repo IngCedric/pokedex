@@ -91,4 +91,52 @@ void main() {
       );
     });
   });
+
+  group('removeFavorite', () {
+    test('removes remotely and updates the local cache when online', () async {
+      when(() => networkInfo.isConnected).thenAnswer((_) async => true);
+      when(() => remote.removeFavorite(25)).thenAnswer((_) async {});
+      when(() => local.getCachedFavorites()).thenReturn([favorite]);
+      when(() => local.cacheFavorites(any())).thenAnswer((_) async {});
+
+      await repository.removeFavorite(25);
+
+      verify(() => remote.removeFavorite(25)).called(1);
+      verify(() => local.cacheFavorites([])).called(1);
+    });
+
+    test('refuses to remove a favorite while offline', () async {
+      when(() => networkInfo.isConnected).thenAnswer((_) async => false);
+
+      expect(() => repository.removeFavorite(25), throwsA(isA<AppException>()));
+      verifyNever(() => remote.removeFavorite(any()));
+    });
+
+    test('translates a 401 response into an unauthorized AppException', () async {
+      when(() => networkInfo.isConnected).thenAnswer((_) async => true);
+      when(() => remote.removeFavorite(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          response: Response(requestOptions: RequestOptions(path: ''), statusCode: 401),
+        ),
+      );
+
+      expect(
+        () => repository.removeFavorite(25),
+        throwsA(isA<AppException>().having((e) => e.message, 'message', contains('reconnecter'))),
+      );
+    });
+
+    test('translates a 500 response into a server AppException', () async {
+      when(() => networkInfo.isConnected).thenAnswer((_) async => true);
+      when(() => remote.removeFavorite(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: ''),
+          response: Response(requestOptions: RequestOptions(path: ''), statusCode: 500),
+        ),
+      );
+
+      expect(() => repository.removeFavorite(25), throwsA(isA<AppException>()));
+    });
+  });
 }

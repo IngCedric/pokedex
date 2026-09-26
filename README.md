@@ -130,8 +130,29 @@ HTTP (même une erreur 4xx) prouve que le réseau fonctionne.
 
 Dans le dashboard Supabase → **SQL Editor**, exécute le script
 [`supabase/migration.sql`](supabase/migration.sql). Il crée la table
-`favorites` et ses règles RLS (chaque utilisateur ne voit/modifie que ses
-propres favoris).
+`favorites` et active la Row Level Security (RLS) dessus.
+
+**Pourquoi la RLS et comment elle fonctionne ici :** sans RLS, n'importe
+quel utilisateur authentifié pourrait lire ou modifier les favoris de
+n'importe qui d'autre via l'API REST (PostgREST expose directement la
+table). La RLS ajoute un filtre *au niveau de PostgreSQL lui-même* — donc
+impossible à contourner depuis le client — appliqué à chaque requête :
+
+```sql
+using (auth.uid() = user_id)       -- pour SELECT et DELETE
+with check (auth.uid() = user_id)  -- pour INSERT
+```
+
+`auth.uid()` est l'identifiant de l'utilisateur déduit du JWT envoyé dans le
+header `Authorization: Bearer <token>` (voir `AuthInterceptor`). Concrètement :
+un `GET /favorites` ne renvoie jamais que les lignes où `user_id` correspond
+à l'utilisateur connecté, et un `INSERT`/`DELETE` sur la ligne d'un autre
+utilisateur est rejeté par PostgreSQL avec une erreur `42501` — même si un
+utilisateur malveillant appelait l'API directement (Postman, curl...) en
+contournant complètement l'app Flutter.
+
+Pour vérifier que la table et les policies sont bien en place, dans **Table
+Editor → favorites**, l'icône RLS doit indiquer "Enabled".
 
 ### 3. Variables d'environnement
 

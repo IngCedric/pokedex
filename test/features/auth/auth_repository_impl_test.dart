@@ -39,6 +39,18 @@ void main() {
         ),
       );
     });
+
+    test('passes through an unmapped AuthException message unchanged', () async {
+      when(() => remote.signIn(email: any(named: 'email'), password: any(named: 'password')))
+          .thenThrow(const AuthException('Email not confirmed'));
+
+      expect(
+        () => repository.login(email: 'ash@pokemon.test', password: 'pikachu1'),
+        throwsA(
+          isA<AppException>().having((e) => e.message, 'message', 'Email not confirmed'),
+        ),
+      );
+    });
   });
 
   group('register', () {
@@ -52,6 +64,28 @@ void main() {
           isA<AppException>().having((e) => e.message, 'message', contains('existe déjà')),
         ),
       );
+    });
+
+    test('translates a weak password error into a friendly AppException', () async {
+      when(() => remote.signUp(email: any(named: 'email'), password: any(named: 'password')))
+          .thenThrow(const AuthException('Password should be at least 6 characters'));
+
+      expect(
+        () => repository.register(email: 'ash@pokemon.test', password: '123'),
+        throwsA(
+          isA<AppException>().having((e) => e.message, 'message', contains('6 caractères')),
+        ),
+      );
+    });
+
+    test('returns an AppUser on success', () async {
+      const user = AppUser(id: '2', email: 'misty@pokemon.test');
+      when(() => remote.signUp(email: any(named: 'email'), password: any(named: 'password')))
+          .thenAnswer((_) async => user);
+
+      final result = await repository.register(email: 'misty@pokemon.test', password: 'starmie1');
+
+      expect(result, user);
     });
   });
 
